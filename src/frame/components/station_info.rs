@@ -15,7 +15,7 @@
 pub struct StationInfo {
     // The ordered list of tagged parameters transmitted by the station.
     // Empty if no parameters were transmitted.
-    pub tagged_parameters: Vec<u8>,
+    pub tagged_parameters: Vec<String>,
     /// The transmission rates that are supported by the station.
     /// Empty if no rates were transmitted.
     pub supported_rates: Vec<f32>,
@@ -27,6 +27,18 @@ pub struct StationInfo {
     pub ht_a_mpdu_parameters: Option<String>,
     // The HT Capabilities RX Supported Modulation and Coding Scheme bitmask, if transmitted.
     pub ht_rx_mcs: Option<String>,
+    // The VHT Capabilities Information bitmask, if transmitted.
+    pub vht_capabilities_info: Option<String>,
+    // The VHT Capabilities RX Supported Modulation and Coding Scheme bitmask, if transmitted.
+    pub vht_rx_mcs: Option<String>,
+    // The VHT Capabilities TX Supported Modulation and Coding Scheme bitmask, if transmitted.
+    pub vht_tx_mcs: Option<String>,
+    // The transmitting power supported by the device, if transmitted.
+    pub transmitting_power: Option<String>,
+    // The Extended Capabilities octets, if transmitted.
+    pub extended_capabilities: Option<String>,
+    // The WPS device name given by the device.
+    pub wps: Option<String>,
     /// This map contains all fields that aren't explicitly parsed by us.
     /// The format is Vec<(FieldId, PayloadBytes)>.
     ///

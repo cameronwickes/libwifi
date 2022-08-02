@@ -31,8 +31,14 @@ pub fn parse_station_info(mut input: &[u8]) -> IResult<&[u8], StationInfo> {
 
         // Create list of tagged parameters.
         match element_id {
+            // Expand vendor specific tagged parameters.
+            id if id == 221 => {
+                let oui = format!("0x{}", encode(&data[0..3]));
+                let subtype = data[3].to_string();
+                station_info.tagged_parameters.push(format!("{}(0x{},{})", element_id.to_string(), oui, subtype));
+            }
             // Don't match extended tags.
-            id if id != 255 => station_info.tagged_parameters.push(element_id),
+            id if id != 255 => station_info.tagged_parameters.push(format!("{}", element_id.to_string())),
             _ => {},
         };
 
@@ -44,11 +50,37 @@ pub fn parse_station_info(mut input: &[u8]) -> IResult<&[u8], StationInfo> {
                 station_info.ssid = Some(ssid);
             }
             1 => station_info.supported_rates = parse_supported_rates(data),
+            33 => station_info.transmitting_power = Some(format!("0x{}", encode(&data[0..2]))),
             45 => {
                 station_info.ht_capabilities_info = Some(network_endian_format(&data[0..2]));
                 station_info.ht_a_mpdu_parameters = Some(network_endian_format(&data[2..3]));
                 station_info.ht_rx_mcs = Some(network_endian_format(&data[3..7]));
             }   
+            127 => {
+                station_info.extended_capabilities = Some(format!("0x{}", encode(&data)));
+            }
+            191 => {
+                station_info.vht_capabilities_info = Some(network_endian_format(&data[0..4]));
+                station_info.vht_rx_mcs = Some(network_endian_format(&data[4..6]));
+                station_info.vht_tx_mcs = Some(network_endian_format(&data[8..10]));
+            }
+            221 => {
+                // Match for Microsoft's WPS tag and OUI.
+                if data[3] == 0x04 && format!("0x{}", encode(&data[0..3])) == "0x0050f2" {
+                    let mut data_count = 4;
+                    while data_count + 4 <= data.len() {
+                        let extension_type = &data[data_count..data_count+2];
+                        let extension_length: usize = data[data_count+3].into();
+                        // Match for the device name.
+                        if extension_type == &[0x10, 0x11] {
+                            station_info.wps = Some(String::from_utf8_lossy(&data[data_count+4..data_count+4+extension_length]).to_string());
+                            data_count = data.len();
+                        }
+                        data_count = data_count + 4;
+                        data_count = data_count + extension_length;
+                    }
+                }
+            }
             _ => {
                 station_info.data.push((element_id, data.to_vec()));
             }

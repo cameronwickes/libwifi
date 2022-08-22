@@ -64,23 +64,6 @@ pub fn parse_station_info(mut input: &[u8]) -> IResult<&[u8], StationInfo> {
                 station_info.vht_rx_mcs = Some(network_endian_format(&data[4..6]));
                 station_info.vht_tx_mcs = Some(network_endian_format(&data[8..10]));
             }
-            221 => {
-                // Match for Microsoft's WPS tag and OUI.
-                if data[3] == 0x04 && format!("0x{}", encode(&data[0..3])) == "0x0050f2" {
-                    let mut data_count = 4;
-                    while data_count + 4 <= data.len() {
-                        let extension_type = &data[data_count..data_count+2];
-                        let extension_length: usize = data[data_count+3].into();
-                        // Match for the device name.
-                        if extension_type == &[0x10, 0x11] {
-                            station_info.wps = Some(String::from_utf8_lossy(&data[data_count+4..data_count+4+extension_length]).to_string());
-                            data_count = data.len();
-                        }
-                        data_count = data_count + 4;
-                        data_count = data_count + extension_length;
-                    }
-                }
-            }
             _ => {
                 station_info.data.push((element_id, data.to_vec()));
             }
